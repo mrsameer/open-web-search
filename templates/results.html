@@ -26,6 +26,18 @@
                 </button>
             </div>
         </form>
+        </form>
+        <a href="/api/search?query={{ query }}" target="_blank" class="json-link">View JSON</a>
+
+        <form action="/llm-view" method="get" target="_blank"
+            style="display: flex; align-items: center; gap: 5px; margin-left: 10px;">
+            <input type="hidden" name="query" value="{{ query }}">
+            <input type="number" name="max_results" value="5" min="1" max="10"
+                style="width: 50px; padding: 0.3rem; border-radius: 5px; border: 1px solid #a5b4fc; background: #1e293b; color: #fff;">
+            <button type="submit" class="json-link"
+                style="border-color: #a5b4fc; color: #a5b4fc; background: none; cursor: pointer;">LLM Agent
+                Data</button>
+        </form>
     </header>
 
     <div class="results-container">
@@ -37,6 +49,10 @@
             </div>
             <span class="result-link">{{ result.href }}</span>
             <div class="result-snippet">{{ result.body }}</div>
+            <div class="result-actions" style="margin-top: 10px;">
+                <a href="/api/read?url={{ result.href }}" target="_blank"
+                    style="color: #38bdf8; text-decoration: none; font-size: 0.9rem;">Read Content (JSON)</a>
+            </div>
         </div>
         {% endfor %}
         {% else %}
