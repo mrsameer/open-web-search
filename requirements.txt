@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+duckduckgo-search
+jinja2
+python-multipart

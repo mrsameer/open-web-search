@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ query }} - Open Web Search</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header class="header">
+        <a href="/" style="text-decoration: none;">
+            <div class="logo">Open Web Search</div>
+        </a>
+        <form action="/search" method="post">
+            <div class="input-group">
+                <input type="text" name="query" value="{{ query }}" required>
+                <button type="submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </header>
+
+    <div class="results-container">
+        {% if results %}
+        {% for result in results %}
+        <div class="result-item">
+            <div class="result-title">
+                <a href="{{ result.href }}" target="_blank">{{ result.title }}</a>
+            </div>
+            <span class="result-link">{{ result.href }}</span>
+            <div class="result-snippet">{{ result.body }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="result-item">
+            <p>No results found for "{{ query }}".</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+
+</html>
