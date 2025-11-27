@@ -20,7 +20,7 @@ def perform_search(query, max_results=10):
     try:
         # Try default backend (api)
         with DDGS() as ddgs:
-            results = list(ddgs.text(query, region='wt-wt', max_results=max_results))
+            results = list(ddgs.text(query, region='in-en', max_results=max_results))
     except Exception as e:
         print(f"Error with default backend: {e}")
     
@@ -29,7 +29,7 @@ def perform_search(query, max_results=10):
         try:
             print("Falling back to 'html' backend")
             with DDGS() as ddgs:
-                results = list(ddgs.text(query, region='wt-wt', backend='html', max_results=max_results))
+                results = list(ddgs.text(query, region='in-en', backend='html', max_results=max_results))
         except Exception as e:
             print(f"Error with html backend: {e}")
             
