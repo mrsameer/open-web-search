@@ -41,26 +41,38 @@
     </header>
 
     <div class="results-container">
-        {% if results %}
-        {% for result in results %}
-        <div class="result-item">
-            <div class="result-title">
-                <a href="{{ result.href }}" target="_blank">{{ result.title }}</a>
+        <div id="instant-answer-container" style="display: none; margin-bottom: 20px;"></div>
+        <div id="images-container" style="display: none; margin-bottom: 20px;"></div>
+
+        <div class="main-content" style="display: flex; gap: 20px;">
+            <div class="search-results" style="flex: 3;">
+                {% if results %}
+                {% for result in results %}
+                <div class="result-item">
+                    <div class="result-title">
+                        <a href="{{ result.href }}" target="_blank">{{ result.title }}</a>
+                    </div>
+                    <span class="result-link">{{ result.href }}</span>
+                    <div class="result-snippet">{{ result.body }}</div>
+                    <div class="result-actions" style="margin-top: 10px;">
+                        <a href="/api/read?url={{ result.href }}" target="_blank"
+                            style="color: #38bdf8; text-decoration: none; font-size: 0.9rem;">Read Content (JSON)</a>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="result-item">
+                    <p>No results found for "{{ query }}".</p>
+                </div>
+                {% endif %}
             </div>
-            <span class="result-link">{{ result.href }}</span>
-            <div class="result-snippet">{{ result.body }}</div>
-            <div class="result-actions" style="margin-top: 10px;">
-                <a href="/api/read?url={{ result.href }}" target="_blank"
-                    style="color: #38bdf8; text-decoration: none; font-size: 0.9rem;">Read Content (JSON)</a>
+
+            <div class="sidebar" style="flex: 1;">
+                <div id="related-topics-container" style="display: none;"></div>
             </div>
         </div>
-        {% endfor %}
-        {% else %}
-        <div class="result-item">
-            <p>No results found for "{{ query }}".</p>
-        </div>
-        {% endif %}
     </div>
+    <script src="/static/script.js"></script>
 </body>
 
 </html>

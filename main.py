@@ -17,14 +17,86 @@ templates = Jinja2Templates(directory="templates")
 
 def perform_search(query, max_results=10):
     results = []
+    
+    # Helper to check if results are poor
+    def is_poor_quality(results):
+        if not results:
+            return True
+        first_title = results[0].get('title', '').lower()
+        # Check for spelling/definition results
+        if "spelling" in first_title or "correct" in first_title or "definition" in first_title or "vs" in first_title:
+            return True
+        # Check for Chinese characters (common issue with "2025" queries)
+        for char in first_title:
+            if '\u4e00' <= char <= '\u9fff':
+                return True
+        return False
+
+    # Helper to clean query (remove year)
+    def clean_query_year(q):
+        import re
+        return re.sub(r'\s+202[0-9]', '', q)
+
+    # 1. Try original query
     try:
-        # Try default backend (api)
         with DDGS() as ddgs:
             results = list(ddgs.text(query, region='in-en', max_results=max_results))
     except Exception as e:
         print(f"Error with default backend: {e}")
-    
-    # If no results or error, try 'html' backend
+
+    # Helper to run search and check quality
+    def try_search(q):
+        try:
+            with DDGS() as ddgs:
+                res = list(ddgs.text(q, region='in-en', max_results=max_results))
+                if res and not is_poor_quality(res):
+                    return res
+        except Exception:
+            pass
+        return None
+
+    # Helper to get suggestion
+    def get_suggestion(q):
+        try:
+            suggestions = get_autocomplete_suggestions(q)
+            if suggestions and len(suggestions) > 1 and isinstance(suggestions[1], list) and len(suggestions[1]) > 0:
+                top = suggestions[1][0]
+                if top.lower().strip() != q.lower().strip():
+                    return top
+        except Exception:
+            pass
+        return None
+
+    if is_poor_quality(results):
+        # 2. Try Cleaned Query (No Year)
+        cleaned_query = clean_query_year(query)
+        if cleaned_query != query:
+            print(f"Poor results. Trying without year: {cleaned_query}")
+            new_results = try_search(cleaned_query)
+            if new_results:
+                results = new_results
+                query = cleaned_query
+            else:
+                # 3. Try Suggestions (Cleaned)
+                suggestion_cleaned = get_suggestion(cleaned_query)
+                if suggestion_cleaned:
+                    print(f"Poor results. Trying suggestion for cleaned query: {suggestion_cleaned}")
+                    new_results = try_search(suggestion_cleaned)
+                    if new_results:
+                        results = new_results
+                        query = suggestion_cleaned
+
+    if is_poor_quality(results):
+        # 4. Try Suggestions (Original) - Fallback
+        suggestion_original = get_suggestion(query)
+        if suggestion_original:
+            print(f"Poor results. Trying suggestion for original query: {suggestion_original}")
+            new_results = try_search(suggestion_original)
+            if new_results:
+                results = new_results
+                query = suggestion_original
+
+    # 5. Fallback to 'html' backend if still no results or very poor
     if not results:
         try:
             print("Falling back to 'html' backend")
@@ -34,6 +106,45 @@ def perform_search(query, max_results=10):
             print(f"Error with html backend: {e}")
             
     return results
+
+def fetch_instant_answer(query):
+    try:
+        url = "https://api.duckduckgo.com/"
+        params = {"q": query, "format": "json", "no_html": 1, "skip_disambig": 1}
+        response = requests.get(url, params=params)
+        data = response.json()
+        return data.get("AbstractText") or data.get("Abstract") or "No instant answer available."
+    except Exception as e:
+        print(f"Error fetching instant answer: {e}")
+        return "Error fetching instant answer."
+
+def image_search(query, max_results=10):
+    try:
+        with DDGS() as ddgs:
+            return list(ddgs.images(query, region='in-en', max_results=max_results))
+    except Exception as e:
+        print(f"Error fetching images: {e}")
+        return []
+
+def get_autocomplete_suggestions(query):
+    try:
+        url = f"https://duckduckgo.com/ac/?q={query}&type=list"
+        response = requests.get(url)
+        return response.json()
+    except Exception as e:
+        print(f"Error fetching suggestions: {e}")
+        return []
+
+def get_related_topics(query):
+    try:
+        url = "https://api.duckduckgo.com/"
+        params = {"q": query, "format": "json"}
+        response = requests.get(url, params=params)
+        data = response.json()
+        return data.get("RelatedTopics", [])
+    except Exception as e:
+        print(f"Error fetching related topics: {e}")
+        return []
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -49,6 +160,26 @@ async def search(request: Request, query: str = Form(...)):
 async def api_search(query: str):
     results = perform_search(query, max_results=10)
     return {"results": results}
+
+@app.get("/api/instant-answer")
+async def api_instant_answer(query: str):
+    answer = fetch_instant_answer(query)
+    return {"answer": answer}
+
+@app.get("/api/images")
+async def api_images(query: str):
+    images = image_search(query)
+    return {"images": images}
+
+@app.get("/api/autocomplete")
+async def api_autocomplete(query: str):
+    suggestions = get_autocomplete_suggestions(query)
+    return {"suggestions": suggestions}
+
+@app.get("/api/related-topics")
+async def api_related_topics(query: str):
+    topics = get_related_topics(query)
+    return {"topics": topics}
 
 @app.get("/api/read")
 async def api_read(url: str):
